@@ -1,0 +1,189 @@
+import express, { type Request, type Response, type NextFunction } from 'express';
+import { randomUUID } from 'node:crypto';
+import type { Item, ItemReport, Report, Settings, StackReport } from '../shared/types.ts';
+import * as store from './store.ts';
+import { researchItem, researchStack } from './research.ts';
+
+const PORT = Number(process.env.STACK_API_PORT ?? 5174);
+const MAX_PARALLEL = 3;
+
+const app = express();
+app.use(express.json({ limit: '1mb' }));
+
+const wrap =
+  (fn: (req: Request, res: Response) => Promise<unknown>) =>
+  (req: Request, res: Response, next: NextFunction) =>
+    fn(req, res).catch(next);
+
+// Research runs take minutes, so they're queued and the UI polls report status.
+let active = 0;
+const queue: (() => Promise<void>)[] = [];
+function enqueue(job: () => Promise<void>) {
+  queue.push(job);
+  pump();
+}
+function pump() {
+  while (active < MAX_PARALLEL && queue.length) {
+    const job = queue.shift()!;
+    active++;
+    job().finally(() => {
+      active--;
+      pump();
+    });
+  }
+}
+
+async function run<R extends Report>(report: R, work: () => Promise<R['findings']>) {
+  try {
+    report.findings = await work();
+    report.status = 'ready';
+  } catch (e) {
+    report.status = 'failed';
+    report.error = e instanceof Error ? e.message : String(e);
+  }
+  report.finishedAt = new Date().toISOString();
+  await store.saveReport(report);
+}
+
+function newReportId(prefix: string) {
+  return `${prefix}-${new Date().toISOString().replace(/[:.]/g, '-')}-${randomUUID().slice(0, 6)}`;
+}
+
+function cleanItem(body: Partial<Item>, existing?: Item): Item {
+  const merged = { ...existing, ...body } as Item;
+  return {
+    ...merged,
+    name: (merged.name ?? '').trim(),
+    kind: merged.kind ?? 'supplement',
+    timing: merged.timing ?? [],
+    servingsPerDay: Number(merged.servingsPerDay) || 1,
+    testing: merged.testing ?? { status: 'unknown', certifications: [] },
+    status: merged.status ?? 'active',
+  };
+}
+
+app.get('/api/state', wrap(async (_req, res) => {
+  const [settings, items, reports] = await Promise.all([
+    store.getSettings(),
+    store.listItems(),
+    store.listReports(),
+  ]);
+  res.json({ settings, items, reports, dataDir: store.DATA_DIR });
+}));
+
+app.put('/api/settings', wrap(async (req, res) => {
+  const settings: Settings = { ...(await store.getSettings()), ...req.body };
+  await store.saveSettings(settings);
+  res.json(settings);
+}));
+
+app.post('/api/items', wrap(async (req, res) => {
+  const item = cleanItem(req.body);
+  if (!item.name) return res.status(400).json({ error: 'Name is required' });
+  item.id = await store.uniqueId(item.name);
+  item.startedAt ??= new Date().toISOString().slice(0, 10);
+  await store.saveItem(item);
+  res.status(201).json(item);
+}));
+
+app.put('/api/items/:id', wrap(async (req, res) => {
+  const existing = await store.getItem(req.params.id as string);
+  if (!existing) return res.status(404).json({ error: 'Not found' });
+  const item = cleanItem({ ...req.body, id: existing.id }, existing);
+  await store.saveItem(item);
+  res.json(item);
+}));
+
+app.delete('/api/items/:id', wrap(async (req, res) => {
+  await store.deleteItem(req.params.id as string);
+  res.status(204).end();
+}));
+
+app.post('/api/items/:id/research', wrap(async (req, res) => {
+  const item = await store.getItem(req.params.id as string);
+  if (!item) return res.status(404).json({ error: 'Not found' });
+  const report: ItemReport = {
+    id: newReportId(item.id),
+    type: 'item',
+    itemId: item.id,
+    createdAt: new Date().toISOString(),
+    status: 'running',
+  };
+  await store.saveReport(report);
+  enqueue(() => run(report, () => researchItem(item)));
+  res.status(202).json(report);
+}));
+
+app.post('/api/stack/research', wrap(async (_req, res) => {
+  const items = (await store.listItems()).filter((i) => i.status === 'active');
+  if (!items.length) return res.status(400).json({ error: 'No active items to review' });
+  const report: StackReport = {
+    id: newReportId('stack'),
+    type: 'stack',
+    createdAt: new Date().toISOString(),
+    status: 'running',
+  };
+  await store.saveReport(report);
+  enqueue(() => run(report, () => researchStack(items)));
+  res.status(202).json(report);
+}));
+
+// Accepting copies findings onto the item. Product details only fill blanks,
+// and "why" only replaces yours if you ask, so your own notes aren't clobbered.
+app.post('/api/reports/:id/accept', wrap(async (req, res) => {
+  const report = await store.getReport(req.params.id as string);
+  if (!report || report.status !== 'ready' || !report.findings) {
+    return res.status(400).json({ error: 'Report is not ready' });
+  }
+  if (report.type === 'item') {
+    const item = await store.getItem(report.itemId);
+    if (!item) return res.status(404).json({ error: 'Item no longer exists' });
+    const f = report.findings;
+    const now = new Date().toISOString();
+    item.research = {
+      summary: f.summary,
+      verdict: f.verdict,
+      typicalDose: f.typicalDose,
+      doseAssessment: f.doseAssessment,
+      evidence: f.evidence,
+      redFlags: f.redFlags,
+      alternatives: f.alternatives,
+      updatedAt: now,
+    };
+    item.testing = { ...f.testing, checkedAt: now };
+    if (req.body?.replaceWhy || !item.why) item.why = f.why;
+    const p = f.productDetails ?? {};
+    item.brand ||= p.brand;
+    item.product ||= p.product;
+    item.price ??= p.price;
+    item.servingsPerContainer ??= p.servingsPerContainer;
+    if (!item.dose && p.servingSize) item.dose = p.servingSize;
+    await store.saveItem(item);
+  }
+  report.status = 'accepted';
+  await store.saveReport(report);
+  res.json(report);
+}));
+
+app.post('/api/reports/:id/dismiss', wrap(async (req, res) => {
+  const report = await store.getReport(req.params.id as string);
+  if (!report) return res.status(404).json({ error: 'Not found' });
+  report.status = 'dismissed';
+  await store.saveReport(report);
+  res.json(report);
+}));
+
+app.use((err: Error, _req: Request, res: Response, _next: NextFunction) => {
+  console.error(err);
+  res.status(500).json({ error: err.message });
+});
+
+await store.ensureDataDir();
+// A run that was in flight when the server stopped will never finish.
+for (const r of await store.listReports()) {
+  if (r.status === 'running') {
+    await store.saveReport({ ...r, status: 'failed', error: 'Server restarted during research. Run it again.' });
+  }
+}
+
+app.listen(PORT, () => console.log(`Stack API on http://localhost:${PORT} (data: ${store.DATA_DIR})`));

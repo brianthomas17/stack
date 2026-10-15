@@ -1,0 +1,8 @@
+node_modules
+dist
+.env
+.DS_Store
+# Your personal data never lives in this repo. Point STACK_DATA_DIR elsewhere,
+# or use ./data locally (ignored).
+/data
+.claude

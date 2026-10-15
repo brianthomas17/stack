@@ -1,0 +1,16 @@
+{
+  "id": "magnesium-glycinate",
+  "name": "Magnesium glycinate",
+  "kind": "supplement",
+  "brand": "Example Brand",
+  "product": "Magnesium Glycinate 200mg",
+  "timing": ["pm"],
+  "dose": "2 capsules (200mg elemental)",
+  "servingsPerDay": 1,
+  "store": "Amazon",
+  "price": 18.99,
+  "servingsPerContainer": 90,
+  "why": "Sleep quality and muscle recovery. Replace this example with your own items.",
+  "testing": { "status": "unknown", "certifications": [] },
+  "status": "active"
+}
