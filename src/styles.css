@@ -101,7 +101,17 @@ button.link { border: none; background: none; padding: 0; color: var(--accent); 
 }
 .banner.info { background: var(--info-bg); color: var(--info); }
 .banner.error { background: var(--bad-bg); color: var(--bad); }
-.error { color: var(--bad); }
+.banner.connect {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+  background: var(--surface);
+  color: var(--text);
+  border: 1px solid var(--accent);
+}
+.banner.connect .small { color: var(--muted); margin-top: 2px; }
+.error, .banner .small.error { color: var(--bad); }
 
 .columns { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
 @media (max-width: 820px) { .columns { grid-template-columns: 1fr; } }

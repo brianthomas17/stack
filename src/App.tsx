@@ -6,6 +6,7 @@ import { ItemRow } from './components/ItemRow.tsx';
 import { ItemPanel } from './components/ItemPanel.tsx';
 import { StackPanel } from './components/StackPanel.tsx';
 import { SettingsPanel } from './components/SettingsPanel.tsx';
+import { ClaudeConnect } from './components/ClaudeConnect.tsx';
 
 type Panel = { kind: 'item'; id: string } | { kind: 'new' } | { kind: 'stack' } | { kind: 'settings' } | null;
 
@@ -114,6 +115,7 @@ export function App() {
         </div>
       </header>
 
+      <ClaudeConnect />
       {error && <div className="banner error">{error}</div>}
       {totals.missing > 0 && (
         <div className="banner">

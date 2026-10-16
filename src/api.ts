@@ -1,4 +1,7 @@
 import type { Item, Report, Settings } from '../shared/types.ts';
+import type { ClaudeStatus } from '../server/claude.ts';
+
+export type { ClaudeStatus };
 
 export interface State {
   settings: Settings;
@@ -18,6 +21,8 @@ async function call<T>(method: string, url: string, body?: unknown): Promise<T> 
 }
 
 export const api = {
+  claudeStatus: () => call<ClaudeStatus>('GET', '/api/claude/status'),
+  claudeLogin: () => call<ClaudeStatus>('POST', '/api/claude/login'),
   state: () => call<State>('GET', '/api/state'),
   saveSettings: (s: Settings) => call<Settings>('PUT', '/api/settings', s),
   createItem: (i: Partial<Item>) => call<Item>('POST', '/api/items', i),

@@ -3,6 +3,7 @@ import { randomUUID } from 'node:crypto';
 import type { Item, ItemReport, Report, Settings, StackReport } from '../shared/types.ts';
 import * as store from './store.ts';
 import { researchItem, researchStack } from './research.ts';
+import { claudeStatus, startLogin } from './claude.ts';
 
 const PORT = Number(process.env.STACK_API_PORT ?? 5174);
 const MAX_PARALLEL = 3;
@@ -62,6 +63,29 @@ function cleanItem(body: Partial<Item>, existing?: Item): Item {
   };
 }
 
+app.get('/api/claude/status', wrap(async (_req, res) => {
+  res.json(await claudeStatus());
+}));
+
+app.post('/api/claude/login', wrap(async (_req, res) => {
+  startLogin();
+  res.status(202).json(await claudeStatus());
+}));
+
+// Never start research on API billing: only a Claude subscription login is allowed.
+async function requireSubscription(res: Response) {
+  const s = await claudeStatus();
+  if (s.subscription) return true;
+  res.status(409).json({
+    error: !s.installed
+      ? 'Claude Code is not installed. See the README.'
+      : s.loggedIn
+        ? 'Claude is signed in with API billing. Click "Connect Claude" to switch to your subscription.'
+        : 'Claude is not connected. Click "Connect Claude" at the top of the page.',
+  });
+  return false;
+}
+
 app.get('/api/state', wrap(async (_req, res) => {
   const [settings, items, reports] = await Promise.all([
     store.getSettings(),
@@ -102,6 +126,7 @@ app.delete('/api/items/:id', wrap(async (req, res) => {
 app.post('/api/items/:id/research', wrap(async (req, res) => {
   const item = await store.getItem(req.params.id as string);
   if (!item) return res.status(404).json({ error: 'Not found' });
+  if (!(await requireSubscription(res))) return;
   const report: ItemReport = {
     id: newReportId(item.id),
     type: 'item',
@@ -117,6 +142,7 @@ app.post('/api/items/:id/research', wrap(async (req, res) => {
 app.post('/api/stack/research', wrap(async (_req, res) => {
   const items = (await store.listItems()).filter((i) => i.status === 'active');
   if (!items.length) return res.status(400).json({ error: 'No active items to review' });
+  if (!(await requireSubscription(res))) return;
   const report: StackReport = {
     id: newReportId('stack'),
     type: 'stack',

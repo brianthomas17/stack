@@ -1,5 +1,4 @@
-import { spawn } from 'node:child_process';
-import { tmpdir } from 'node:os';
+import { spawnClaude } from './claude.ts';
 import type { Item, ItemFindings, StackFindings } from '../shared/types.ts';
 
 // Research runs through the local Claude Code CLI, so it uses your existing
@@ -166,12 +165,11 @@ export function runClaude<T>(prompt: string, schema: object, signal?: AbortSigna
     ];
     if (process.env.STACK_RESEARCH_MODEL) args.push('--model', process.env.STACK_RESEARCH_MODEL);
 
-    // Run from a neutral directory so no project CLAUDE.md leaks into the research.
-    const child = spawn('claude', args, { cwd: tmpdir(), signal, stdio: ['pipe', 'pipe', 'pipe'] });
+    const child = spawnClaude(args, { signal, stdio: ['pipe', 'pipe', 'pipe'] });
     let out = '';
     let err = '';
-    child.stdout.on('data', (d) => (out += d));
-    child.stderr.on('data', (d) => (err += d));
+    child.stdout!.on('data', (d) => (out += d));
+    child.stderr!.on('data', (d) => (err += d));
     child.on('error', (e: NodeJS.ErrnoException) =>
       reject(e.code === 'ENOENT'
         ? new Error('Claude Code CLI not found. Install it (https://claude.com/claude-code) and run `claude` once to log in.')
@@ -182,7 +180,7 @@ export function runClaude<T>(prompt: string, schema: object, signal?: AbortSigna
         if (res.is_error) {
           const msg: string = res.result || 'Claude returned an error';
           throw new Error(/authenticat|log ?in|oauth/i.test(msg)
-            ? `${msg}. Run \`claude\` in a terminal and log in (/login), then try again.`
+            ? `${msg}. Click "Connect Claude" at the top of the page, then try again.`
             : msg);
         }
         if (res.structured_output) return resolve(res.structured_output as T);
@@ -196,7 +194,7 @@ export function runClaude<T>(prompt: string, schema: object, signal?: AbortSigna
         reject(new Error(out ? msg : `Claude exited without output. ${err.trim()}`.trim()));
       }
     });
-    child.stdin.end(prompt);
+    child.stdin!.end(prompt);
   });
 }
 
