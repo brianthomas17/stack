@@ -14,10 +14,10 @@ export function ItemRow({ item, settings, report, onOpen }: Props) {
   const sub = [item.brand, item.dose].filter(Boolean).join(' · ');
   return (
     <li>
-      <button className="row" onClick={onOpen}>
+      <button className="row" onClick={onOpen} title={[item.name, item.brand, item.dose].filter(Boolean).join(' · ')}>
         <div className="row-main">
           <div className="row-title">
-            {item.name}
+            <span className="row-name">{item.name}</span>
             {item.kind !== 'supplement' && <span className="tag">{item.kind === 'prescription' ? 'Rx' : 'OTC'}</span>}
             {!shouldShare(item, settings) && <span className="tag quiet" title="Not shared with friends">private</span>}
           </div>
