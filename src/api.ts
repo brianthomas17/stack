@@ -29,6 +29,7 @@ export const api = {
   updateItem: (i: Item) => call<Item>('PUT', `/api/items/${i.id}`, i),
   deleteItem: (id: string) => call<void>('DELETE', `/api/items/${id}`),
   researchItem: (id: string) => call<Report>('POST', `/api/items/${id}/research`),
+  researchAll: () => call<{ queued: number; skipped: number }>('POST', '/api/research/all'),
   researchStack: () => call<Report>('POST', '/api/stack/research'),
   accept: (id: string, replaceWhy: boolean) => call<Report>('POST', `/api/reports/${id}/accept`, { replaceWhy }),
   dismiss: (id: string) => call<Report>('POST', `/api/reports/${id}/dismiss`),

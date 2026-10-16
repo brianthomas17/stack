@@ -52,6 +52,19 @@ export function App() {
 
   const latestStack = state?.reports.find((r): r is StackReport => r.type === 'stack');
   const toReview = state?.reports.filter((r) => r.type === 'item' && r.status === 'ready').length ?? 0;
+  const researching = state?.reports.filter((r) => r.type === 'item' && r.status === 'running').length ?? 0;
+
+  const researchAll = async () => {
+    const n = active.length;
+    if (!confirm(`Research all ${n} active items? Claude runs 3 at a time on your subscription, so this takes a while. Items already running or waiting for review are skipped.`)) return;
+    try {
+      const { queued } = await api.researchAll();
+      if (!queued) setError('Everything is already researching or waiting for your review.');
+      await refresh();
+    } catch (e) {
+      setError(e instanceof Error ? e.message : String(e));
+    }
+  };
 
   if (!state) {
     return <div className="boot">{error ? `Can't reach the API: ${error}` : 'Loading…'}</div>;
@@ -106,6 +119,10 @@ export function App() {
           </div>
         </div>
         <div className="actions">
+          <button onClick={researchAll}>
+            Research everything
+            {researching > 0 && <span className="running-count"><span className="dot running" /> {researching}</span>}
+          </button>
           <button onClick={() => setPanel({ kind: 'stack' })}>
             Interactions
             {latestStack?.status === 'running' && <span className="dot running" />}

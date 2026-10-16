@@ -165,6 +165,7 @@ button.link { border: none; background: none; padding: 0; color: var(--accent); 
 .pill.review { background: var(--accent); color: var(--accent-text); }
 .pill.running, .dot.running { background: var(--info-bg); color: var(--info); animation: pulse 1.6s ease-in-out infinite; }
 .dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; background: var(--info); }
+.running-count { display: inline-flex; align-items: center; gap: 4px; font-size: 12px; color: var(--info); }
 @keyframes pulse { 50% { opacity: 0.5; } }
 
 .foot { font-size: 12px; margin-top: 32px; }

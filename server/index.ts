@@ -123,10 +123,7 @@ app.delete('/api/items/:id', wrap(async (req, res) => {
   res.status(204).end();
 }));
 
-app.post('/api/items/:id/research', wrap(async (req, res) => {
-  const item = await store.getItem(req.params.id as string);
-  if (!item) return res.status(404).json({ error: 'Not found' });
-  if (!(await requireSubscription(res))) return;
+async function startItemResearch(item: Item) {
   const report: ItemReport = {
     id: newReportId(item.id),
     type: 'item',
@@ -136,7 +133,28 @@ app.post('/api/items/:id/research', wrap(async (req, res) => {
   };
   await store.saveReport(report);
   enqueue(() => run(report, () => researchItem(item)));
-  res.status(202).json(report);
+  return report;
+}
+
+app.post('/api/items/:id/research', wrap(async (req, res) => {
+  const item = await store.getItem(req.params.id as string);
+  if (!item) return res.status(404).json({ error: 'Not found' });
+  if (!(await requireSubscription(res))) return;
+  res.status(202).json(await startItemResearch(item));
+}));
+
+// Queues every active item, skipping ones already running or waiting for review
+// so a second click doesn't duplicate work or bury unreviewed findings.
+app.post('/api/research/all', wrap(async (_req, res) => {
+  if (!(await requireSubscription(res))) return;
+  const [items, reports] = await Promise.all([store.listItems(), store.listReports()]);
+  const busy = new Set(
+    reports.filter((r) => r.type === 'item' && (r.status === 'running' || r.status === 'ready'))
+      .map((r) => (r as ItemReport).itemId),
+  );
+  const todo = items.filter((i) => i.status === 'active' && !busy.has(i.id));
+  for (const item of todo) await startItemResearch(item);
+  res.status(202).json({ queued: todo.length, skipped: items.filter((i) => i.status === 'active').length - todo.length });
 }));
 
 app.post('/api/stack/research', wrap(async (_req, res) => {
