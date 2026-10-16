@@ -125,8 +125,8 @@ export function ItemPanel({ item, settings, reports, onClose, onChanged }: Props
       {latest?.status === 'failed' && <div className="banner error">Last research run failed: {latest.error}</div>}
 
       {latest?.status === 'ready' && latest.findings && (
-        <div className="review">
-          <div className="review-head">
+        <div className="findings-box">
+          <div className="findings-head">
             <h3>New findings · {ago(latest.finishedAt ?? latest.createdAt)}</h3>
             <span className="muted">Nothing changes until you accept.</span>
           </div>

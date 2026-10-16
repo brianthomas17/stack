@@ -127,6 +127,7 @@ button.link { border: none; background: none; padding: 0; color: var(--accent); 
   width: 100%;
   text-align: left;
   display: flex;
+  flex-wrap: wrap;
   justify-content: space-between;
   align-items: center;
   gap: 12px;
@@ -134,10 +135,10 @@ button.link { border: none; background: none; padding: 0; color: var(--accent); 
   border-radius: var(--radius);
   background: var(--surface);
 }
-.row-main { min-width: 0; }
+.row-main { min-width: 0; flex: 1 1 140px; }
 .row-title { font-weight: 600; display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
 .row-sub { color: var(--muted); font-size: 13px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.row-meta { display: flex; align-items: center; gap: 6px; flex-shrink: 0; flex-wrap: wrap; justify-content: flex-end; }
+.row-meta { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; justify-content: flex-end; margin-left: auto; }
 .row-cost { font-variant-numeric: tabular-nums; font-size: 13px; color: var(--muted); min-width: 48px; text-align: right; }
 
 .tag {
@@ -156,7 +157,6 @@ button.link { border: none; background: none; padding: 0; color: var(--accent); 
   padding: 2px 8px;
   border-radius: 999px;
   white-space: nowrap;
-  text-transform: capitalize;
 }
 .pill.good { background: var(--good-bg); color: var(--good); }
 .pill.warn { background: var(--warn-bg); color: var(--warn); }
@@ -189,14 +189,14 @@ button.link { border: none; background: none; padding: 0; color: var(--accent); 
 .panel-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; margin-bottom: 14px; }
 .toolbar { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin: 12px 0; }
 
-.review {
+.findings-box {
   border: 2px solid var(--accent);
   border-radius: var(--radius);
   padding: 14px;
   margin: 12px 0 18px;
   background: var(--surface);
 }
-.review-head { display: flex; justify-content: space-between; flex-wrap: wrap; gap: 8px; margin-bottom: 10px; }
+.findings-head { display: flex; justify-content: space-between; flex-wrap: wrap; gap: 8px; margin-bottom: 10px; }
 
 .facts {
   display: grid;

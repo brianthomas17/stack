@@ -1,5 +1,7 @@
 import type { Severity, Source, Strength, TestingStatus } from '../../shared/types.ts';
 
+const cap = (s: string) => s[0].toUpperCase() + s.slice(1);
+
 const TESTING: Record<TestingStatus, { label: string; cls: string }> = {
   certified: { label: 'Certified', cls: 'good' },
   'brand-tested': { label: 'Brand-tested', cls: 'warn' },
@@ -15,13 +17,13 @@ export function TestingBadge({ status }: { status: TestingStatus }) {
 const STRENGTH: Record<Strength, string> = { strong: 'good', moderate: 'good', mixed: 'warn', weak: 'quiet' };
 
 export function StrengthBadge({ strength }: { strength: Strength }) {
-  return <span className={`pill ${STRENGTH[strength]}`}>{strength}</span>;
+  return <span className={`pill ${STRENGTH[strength]}`}>{cap(strength)}</span>;
 }
 
 const SEVERITY: Record<Severity, string> = { high: 'bad', medium: 'warn', low: 'quiet' };
 
 export function SeverityBadge({ severity }: { severity: Severity }) {
-  return <span className={`pill ${SEVERITY[severity]}`}>{severity}</span>;
+  return <span className={`pill ${SEVERITY[severity]}`}>{cap(severity)}</span>;
 }
 
 function host(url: string) {

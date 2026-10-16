@@ -135,7 +135,7 @@ Find out:
 3. Whether THIS brand and product is independently third-party tested or certified.
 4. Any red flags with the brand, the product, or the ingredient.
 5. Up to 3 alternatives that are independently certified and/or more cost-effective per serving, with real product URLs. Include the current product only if it is still the best choice.
-6. Product details for the current product if you can find them (brand, product name, current price, servings per container, serving size). Omit anything you can't confirm.
+6. Product details for the current product if you can find them (brand, product name, current price, servings per container, serving size, kept short like "1 softgel (24mg)" or "1 scoop (5g)"). Omit anything you can't confirm.
 ${item.kind !== 'supplement' ? '\nThis is a medication, so skip alternatives and focus on evidence, dose, and safety.\n' : ''}
 ${RULES}`;
 }
