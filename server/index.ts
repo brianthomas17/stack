@@ -4,6 +4,7 @@ import type { Item, ItemReport, Report, Settings, StackReport } from '../shared/
 import * as store from './store.ts';
 import { researchItem, researchStack } from './research.ts';
 import { claudeStatus, startLogin } from './claude.ts';
+import { clearChat, resetStuckChats, sendMessage } from './chat.ts';
 
 const PORT = Number(process.env.STACK_API_PORT ?? 5174);
 const MAX_PARALLEL = 3;
@@ -172,6 +173,28 @@ app.post('/api/stack/research', wrap(async (_req, res) => {
   res.status(202).json(report);
 }));
 
+app.get('/api/items/:id/chat', wrap(async (req, res) => {
+  res.json(await store.getChat(req.params.id as string));
+}));
+
+app.post('/api/items/:id/chat', wrap(async (req, res) => {
+  const item = await store.getItem(req.params.id as string);
+  if (!item) return res.status(404).json({ error: 'Not found' });
+  const text = String(req.body?.text ?? '').trim();
+  if (!text) return res.status(400).json({ error: 'Message is empty' });
+  if (!(await requireSubscription(res))) return;
+  try {
+    res.status(202).json(await sendMessage(item, text));
+  } catch (e) {
+    res.status(409).json({ error: e instanceof Error ? e.message : String(e) });
+  }
+}));
+
+app.delete('/api/items/:id/chat', wrap(async (req, res) => {
+  await clearChat(req.params.id as string);
+  res.json(await store.getChat(req.params.id as string));
+}));
+
 // Accepting copies findings onto the item. Product details only fill blanks,
 // and "why" only replaces yours if you ask, so your own notes aren't clobbered.
 app.post('/api/reports/:id/accept', wrap(async (req, res) => {
@@ -229,5 +252,7 @@ for (const r of await store.listReports()) {
     await store.saveReport({ ...r, status: 'failed', error: 'Server restarted during research. Run it again.' });
   }
 }
+
+await resetStuckChats((await store.listItems()).map((i) => i.id));
 
 app.listen(PORT, () => console.log(`Stack API on http://localhost:${PORT} (data: ${store.DATA_DIR})`));

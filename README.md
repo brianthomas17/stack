@@ -16,6 +16,10 @@ Runs locally. Your data lives in its own folder, never in this repo.
 - **Research with Claude** per item: evidence with sources, typical vs. your
   dose, testing status, red flags (recalls, FDA letters, contamination, failed
   tests), and better or cheaper certified alternatives
+- **Chat with Claude** on each item to learn about it. Claude knows your dose,
+  brand, research and the rest of your stack, and can search the web.
+  A short **What I've learned** digest updates after each reply and sits in
+  the **At a glance** card at the top of every item
 - **Interactions** check across your whole active stack, supplements and meds
 - **Review before saving**: research lands as a dated report. Nothing changes
   until you accept it, and every run is kept as history
@@ -44,7 +48,7 @@ Open http://localhost:5173.
 ### Keeping your data
 
 `STACK_DATA_DIR` holds plain JSON: one file per item in `supplements/`, every
-research run in `reports/`, and `settings.json`. Make that folder its own
+research run in `reports/`, conversations in `chats/`, and `settings.json`. Make that folder its own
 **private** git repo and you get a full history of your stack and its research:
 
 ```bash
@@ -55,8 +59,10 @@ cd ../stack-data && git init && git add -A && git commit -m "My stack"
 
 Each button runs the Claude Code CLI in the background (`claude -p`) with only
 web search and web fetch enabled, and asks for structured findings. A run takes
-a few minutes; up to three run at once. Set `STACK_RESEARCH_MODEL` in `.env` to
-choose a model.
+a few minutes; up to three run at once. Chat uses the same login: each message
+is one `claude -p` call with the conversation replayed, and the learnings
+digest runs on Haiku. Optional `.env` overrides: `STACK_RESEARCH_MODEL`,
+`STACK_CHAT_MODEL`, `STACK_SUMMARY_MODEL`.
 
 Research is informational, not medical advice. It won't tell you to stop a
 prescription; talk to your doctor.

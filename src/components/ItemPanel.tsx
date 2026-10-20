@@ -1,13 +1,15 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import {
   costPerServing, dailyCost, shouldShare,
-  type Item, type ItemReport, type Report, type Settings,
+  type Chat, type Item, type ItemReport, type Report, type Settings,
 } from '../../shared/types.ts';
 import { api } from '../api.ts';
 import { ago, date, money } from '../format.ts';
 import { ItemForm } from './ItemForm.tsx';
 import { Findings, ResearchView } from './Research.tsx';
 import { TestingBadge } from './Badges.tsx';
+import { Glance } from './Glance.tsx';
+import { ChatView } from './ChatView.tsx';
 
 interface Props {
   item?: Item;
@@ -23,6 +25,21 @@ export function ItemPanel({ item, settings, reports, onClose, onChanged }: Props
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [replaceWhy, setReplaceWhy] = useState(false);
+  const [tab, setTab] = useState<'details' | 'chat'>('details');
+  const [chat, setChat] = useState<Chat>();
+
+  const itemId = item?.id;
+  useEffect(() => {
+    if (itemId) api.chat(itemId).then(setChat).catch(() => {});
+  }, [itemId]);
+
+  // Poll while Claude is replying or refreshing the learnings digest.
+  const chatBusy = Boolean(chat?.pending || chat?.summarizing);
+  useEffect(() => {
+    if (!itemId || !chatBusy) return;
+    const t = setInterval(() => api.chat(itemId).then(setChat).catch(() => {}), 2000);
+    return () => clearInterval(t);
+  }, [itemId, chatBusy]);
 
   const act = async (fn: () => Promise<unknown>) => {
     setBusy(true);
@@ -156,6 +173,21 @@ export function ItemPanel({ item, settings, reports, onClose, onChanged }: Props
         </div>
       )}
 
+      <Glance item={item} chat={chat} onAsk={() => setTab('chat')} />
+
+      <div className="tabs" role="tablist">
+        <button role="tab" aria-selected={tab === 'details'} className={tab === 'details' ? 'active' : ''}
+          onClick={() => setTab('details')}>Details</button>
+        <button role="tab" aria-selected={tab === 'chat'} className={tab === 'chat' ? 'active' : ''}
+          onClick={() => setTab('chat')}>
+          Chat{chat?.messages.length ? ` (${chat.messages.length})` : ''}
+          {chat?.pending && <span className="dot running" />}
+        </button>
+      </div>
+
+      {tab === 'chat' && <ChatView item={item} chat={chat} setChat={setChat} />}
+
+      {tab === 'details' && <>
       <dl className="facts">
         <div><dt>Dose</dt><dd>{item.dose || '—'}</dd></div>
         <div><dt>When</dt><dd>{item.timing.map((t) => t.toUpperCase()).join(' + ') || '—'}</dd></div>
@@ -200,6 +232,7 @@ export function ItemPanel({ item, settings, reports, onClose, onChanged }: Props
           </ul>
         </section>
       )}
+      </>}
     </div>
   );
 }

@@ -1,13 +1,14 @@
 import { mkdir, readdir, readFile, rename, rm, writeFile } from 'node:fs/promises';
 import { existsSync } from 'node:fs';
 import path from 'node:path';
-import type { Item, Report, Settings } from '../shared/types.ts';
+import type { Chat, Item, Report, Settings } from '../shared/types.ts';
 
 // Data lives outside the app repo so the public code never carries anyone's stack.
 export const DATA_DIR = path.resolve(process.env.STACK_DATA_DIR ?? 'data');
 
 const itemsDir = path.join(DATA_DIR, 'supplements');
 const reportsDir = path.join(DATA_DIR, 'reports');
+const chatsDir = path.join(DATA_DIR, 'chats');
 const settingsFile = path.join(DATA_DIR, 'settings.json');
 
 const DEFAULT_SETTINGS: Settings = { displayName: '', shareMedsByDefault: false };
@@ -83,4 +84,13 @@ export async function getReport(id: string): Promise<Report | undefined> {
 
 export async function saveReport(report: Report) {
   await writeJson(path.join(reportsDir, `${slugify(report.id)}.json`), report);
+}
+
+export async function getChat(itemId: string): Promise<Chat> {
+  const file = path.join(chatsDir, `${slugify(itemId)}.json`);
+  return existsSync(file) ? readJson<Chat>(file) : { itemId, messages: [] };
+}
+
+export async function saveChat(chat: Chat) {
+  await writeJson(path.join(chatsDir, `${slugify(chat.itemId)}.json`), chat);
 }

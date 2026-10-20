@@ -1,4 +1,4 @@
-import { spawnClaude } from './claude.ts';
+import { askClaude } from './claude.ts';
 import type { Item, ItemFindings, StackFindings } from '../shared/types.ts';
 
 // Research runs through the local Claude Code CLI, so it uses your existing
@@ -100,7 +100,7 @@ const stackSchema = {
   required: ['summary', 'interactions', 'timingSuggestions', 'redundancies'],
 };
 
-function describe(item: Item) {
+export function describe(item: Item) {
   return [
     `Name: ${item.name}`,
     `Type: ${item.kind}`,
@@ -129,6 +129,8 @@ export function itemPrompt(item: Item) {
 
 ${describe(item)}
 
+Start with a one-sentence verdict that says what to do, e.g. "Keep it, but switch to an Informed Choice certified brand" or "Worth taking; this product is a good pick".
+
 Find out:
 1. What the evidence says about it (benefits worth having, strength of evidence), and a concise evidence-based "why" they might take it.
 2. Typical evidence-backed dose, and whether their dose looks reasonable.
@@ -153,50 +155,13 @@ Find:
 ${RULES}`;
 }
 
-export function runClaude<T>(prompt: string, schema: object, signal?: AbortSignal): Promise<T> {
-  return new Promise((resolve, reject) => {
-    const args = [
-      '-p',
-      '--output-format', 'json',
-      '--json-schema', JSON.stringify(schema),
-      '--tools', 'WebSearch,WebFetch',
-      '--allowedTools', 'WebSearch,WebFetch',
-      '--permission-mode', 'dontAsk',
-    ];
-    if (process.env.STACK_RESEARCH_MODEL) args.push('--model', process.env.STACK_RESEARCH_MODEL);
-
-    const child = spawnClaude(args, { signal, stdio: ['pipe', 'pipe', 'pipe'] });
-    let out = '';
-    let err = '';
-    child.stdout!.on('data', (d) => (out += d));
-    child.stderr!.on('data', (d) => (err += d));
-    child.on('error', (e: NodeJS.ErrnoException) =>
-      reject(e.code === 'ENOENT'
-        ? new Error('Claude Code CLI not found. Install it (https://claude.com/claude-code) and run `claude` once to log in.')
-        : e));
-    child.on('close', () => {
-      try {
-        const res = JSON.parse(out);
-        if (res.is_error) {
-          const msg: string = res.result || 'Claude returned an error';
-          throw new Error(/authenticat|log ?in|oauth/i.test(msg)
-            ? `${msg}. Click "Connect Claude" at the top of the page, then try again.`
-            : msg);
-        }
-        if (res.structured_output) return resolve(res.structured_output as T);
-        // Fall back to a JSON object in the text result.
-        const text: string = res.result ?? '';
-        const match = text.match(/\{[\s\S]*\}/);
-        if (!match) throw new Error('Claude did not return structured findings');
-        resolve(JSON.parse(match[0]) as T);
-      } catch (e) {
-        const msg = e instanceof Error ? e.message : String(e);
-        reject(new Error(out ? msg : `Claude exited without output. ${err.trim()}`.trim()));
-      }
-    });
-    child.stdin!.end(prompt);
-  });
+function structured<T>(schema: object, prompt: string) {
+  return askClaude(prompt, {
+    schema,
+    tools: ['WebSearch', 'WebFetch'],
+    model: process.env.STACK_RESEARCH_MODEL,
+  }).then((r) => r.structured as T);
 }
 
-export const researchItem = (item: Item) => runClaude<ItemFindings>(itemPrompt(item), itemSchema);
-export const researchStack = (items: Item[]) => runClaude<StackFindings>(stackPrompt(items), stackSchema);
+export const researchItem = (item: Item) => structured<ItemFindings>(itemSchema, itemPrompt(item));
+export const researchStack = (items: Item[]) => structured<StackFindings>(stackSchema, stackPrompt(items));

@@ -1,4 +1,4 @@
-import type { Item, Report, Settings } from '../shared/types.ts';
+import type { Chat, Item, Report, Settings } from '../shared/types.ts';
 import type { ClaudeStatus } from '../server/claude.ts';
 
 export type { ClaudeStatus };
@@ -29,6 +29,9 @@ export const api = {
   updateItem: (i: Item) => call<Item>('PUT', `/api/items/${i.id}`, i),
   deleteItem: (id: string) => call<void>('DELETE', `/api/items/${id}`),
   researchItem: (id: string) => call<Report>('POST', `/api/items/${id}/research`),
+  chat: (id: string) => call<Chat>('GET', `/api/items/${id}/chat`),
+  sendChat: (id: string, text: string) => call<Chat>('POST', `/api/items/${id}/chat`, { text }),
+  clearChat: (id: string) => call<Chat>('DELETE', `/api/items/${id}/chat`),
   researchAll: () => call<{ queued: number; skipped: number }>('POST', '/api/research/all'),
   researchStack: () => call<Report>('POST', '/api/stack/research'),
   accept: (id: string, replaceWhy: boolean) => call<Report>('POST', `/api/reports/${id}/accept`, { replaceWhy }),

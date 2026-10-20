@@ -238,3 +238,56 @@ input, select, textarea {
 }
 input[type='checkbox'] { width: auto; }
 textarea { resize: vertical; }
+
+.glance {
+  background: var(--surface);
+  border-radius: var(--radius);
+  padding: 14px;
+  margin: 12px 0 16px;
+}
+.glance-row { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-bottom: 8px; }
+.glance-stat { font-size: 13px; color: var(--muted); font-variant-numeric: tabular-nums; }
+.glance-stat + .glance-stat::before { content: '·'; margin-right: 8px; }
+.glance-dose { max-width: 240px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.glance-summary {
+  font-size: 14px;
+  color: var(--muted);
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.glance-flags { margin: 0 0 8px; padding-left: 18px; font-size: 13px; color: var(--bad); }
+.glance-learned { border-top: 1px solid var(--border); margin-top: 10px; padding-top: 10px; }
+.glance-learned-head { display: flex; justify-content: space-between; align-items: baseline; }
+.glance-learned .list { font-size: 14px; gap: 4px; }
+
+.tabs { display: flex; gap: 4px; border-bottom: 1px solid var(--border); margin-bottom: 14px; }
+.tabs button {
+  border: none;
+  border-bottom: 2px solid transparent;
+  border-radius: 0;
+  background: none;
+  color: var(--muted);
+  padding: 8px 12px;
+}
+.tabs button:hover:not(:disabled) { background: none; color: var(--text); }
+.tabs button.active { color: var(--text); border-bottom-color: var(--accent); font-weight: 600; }
+
+.chat { display: flex; flex-direction: column; gap: 10px; }
+.starters { display: flex; flex-direction: column; align-items: flex-start; gap: 6px; }
+.starters button { font-size: 13px; }
+.messages { display: flex; flex-direction: column; gap: 10px; }
+.msg { padding: 10px 12px; border-radius: 12px; max-width: 92%; overflow-wrap: anywhere; }
+.msg.user { align-self: flex-end; background: var(--accent); color: var(--accent-text); white-space: pre-wrap; }
+.msg.assistant { align-self: flex-start; background: var(--surface); }
+.msg.thinking { color: var(--muted); }
+.dots::after { content: '…'; animation: pulse 1.2s ease-in-out infinite; }
+.composer { display: flex; gap: 8px; align-items: flex-end; position: sticky; bottom: 0; background: var(--bg); padding: 8px 0; }
+.composer textarea { flex: 1; resize: none; }
+.md > :first-child { margin-top: 0; }
+.md > :last-child { margin-bottom: 0; }
+.md p, .md ul, .md ol { margin: 0 0 8px; }
+.md ul, .md ol { padding-left: 20px; }
+.md h1, .md h2, .md h3, .md h4 { font-size: 14px; margin: 10px 0 4px; }
+.md code { background: var(--surface-2); padding: 1px 4px; border-radius: 4px; }

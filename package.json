@@ -12,7 +12,9 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "express": "^5.3.0"
+    "dompurify": "^3.4.17",
+    "express": "^5.3.0",
+    "marked": "^18.1.1"
   },
   "devDependencies": {
     "@types/express": "^5.0.6",

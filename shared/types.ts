@@ -156,3 +156,28 @@ export function dailyCost(item: Item): number | undefined {
   const cps = costPerServing(item);
   return cps === undefined ? undefined : cps * item.servingsPerDay;
 }
+
+export interface ChatMessage {
+  role: 'user' | 'assistant';
+  text: string;
+  at: string;
+}
+
+/** A running digest of what you've learned about an item across all chats. */
+export interface Learnings {
+  summary: string;
+  takeaways: string[];
+  openQuestions: string[];
+  updatedAt: string;
+}
+
+export interface Chat {
+  itemId: string;
+  messages: ChatMessage[];
+  learnings?: Learnings;
+  /** Claude is writing a reply. */
+  pending?: boolean;
+  /** The learnings digest is being refreshed in the background. */
+  summarizing?: boolean;
+  error?: string;
+}

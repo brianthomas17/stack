@@ -18,6 +18,64 @@ export function spawnClaude(args: string[], opts: SpawnOptions = {}) {
   return spawn('claude', args, { cwd: tmpdir(), env: claudeEnv(), ...opts });
 }
 
+export interface AskOptions {
+  /** JSON Schema for structured output. Without it you get plain text back. */
+  schema?: object;
+  /** Built-in tools Claude may use. Defaults to none. */
+  tools?: string[];
+  model?: string;
+  systemPrompt?: string;
+}
+
+export interface AskResult {
+  text: string;
+  structured?: unknown;
+}
+
+/** One-shot `claude -p` call on the user's subscription. The prompt goes in on stdin. */
+export function askClaude(prompt: string, opts: AskOptions = {}): Promise<AskResult> {
+  return new Promise((resolve, reject) => {
+    const tools = opts.tools ?? [];
+    const args = ['-p', '--output-format', 'json', '--permission-mode', 'dontAsk', '--tools', tools.join(',')];
+    if (tools.length) args.push('--allowedTools', tools.join(','));
+    if (opts.schema) args.push('--json-schema', JSON.stringify(opts.schema));
+    if (opts.model) args.push('--model', opts.model);
+    if (opts.systemPrompt) args.push('--append-system-prompt', opts.systemPrompt);
+
+    const child = spawnClaude(args, { stdio: ['pipe', 'pipe', 'pipe'] });
+    let out = '';
+    let err = '';
+    child.stdout!.on('data', (d) => (out += d));
+    child.stderr!.on('data', (d) => (err += d));
+    child.on('error', (e: NodeJS.ErrnoException) =>
+      reject(e.code === 'ENOENT'
+        ? new Error('Claude Code CLI not found. Install it (https://claude.com/claude-code), then reload.')
+        : e));
+    child.on('close', () => {
+      try {
+        const res = JSON.parse(out);
+        if (res.is_error) {
+          const msg: string = res.result || 'Claude returned an error';
+          throw new Error(/authenticat|log ?in|oauth/i.test(msg)
+            ? `${msg}. Click "Connect Claude" at the top of the page, then try again.`
+            : msg);
+        }
+        const text: string = res.result ?? '';
+        if (!opts.schema) return resolve({ text });
+        if (res.structured_output) return resolve({ text, structured: res.structured_output });
+        // Fall back to a JSON object in the text result.
+        const match = text.match(/\{[\s\S]*\}/);
+        if (!match) throw new Error('Claude did not return structured output');
+        resolve({ text, structured: JSON.parse(match[0]) });
+      } catch (e) {
+        const msg = e instanceof Error ? e.message : String(e);
+        reject(new Error(out ? msg : `Claude exited without output. ${err.trim()}`.trim()));
+      }
+    });
+    child.stdin!.end(prompt);
+  });
+}
+
 export interface ClaudeStatus {
   installed: boolean;
   loggedIn: boolean;
