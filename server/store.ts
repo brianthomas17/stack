@@ -2,6 +2,7 @@ import { mkdir, readdir, readFile, rename, rm, writeFile } from 'node:fs/promise
 import { existsSync } from 'node:fs';
 import path from 'node:path';
 import type { Chat, Item, Report, Settings } from '../shared/types.ts';
+import { noteChange } from './autocommit.ts';
 
 // Data lives outside the app repo so the public code never carries anyone's stack.
 export const DATA_DIR = path.resolve(process.env.STACK_DATA_DIR ?? 'data');
@@ -23,6 +24,7 @@ async function writeJson(file: string, data: unknown) {
   const tmp = `${file}.tmp`;
   await writeFile(tmp, JSON.stringify(data, null, 2) + '\n');
   await rename(tmp, file);
+  noteChange(file);
 }
 
 async function listJson<T>(dir: string): Promise<T[]> {
@@ -63,7 +65,9 @@ export async function saveItem(item: Item) {
 }
 
 export async function deleteItem(id: string) {
-  await rm(path.join(itemsDir, `${slugify(id)}.json`), { force: true });
+  const file = path.join(itemsDir, `${slugify(id)}.json`);
+  await rm(file, { force: true });
+  noteChange(file);
 }
 
 export async function uniqueId(name: string) {

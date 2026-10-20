@@ -55,6 +55,11 @@ research run in `reports/`, conversations in `chats/`, and `settings.json`. Make
 cd ../stack-data && git init && git add -A && git commit -m "My stack"
 ```
 
+When the data folder is a git repo, the app commits changes automatically a
+few seconds after you stop editing, and pushes if the repo has a remote. A chat
+reply and its learnings update, or a batch of research results, land as one
+commit. Set `STACK_DATA_AUTOCOMMIT=false` in `.env` to turn it off.
+
 ## How research works
 
 Each button runs the Claude Code CLI in the background (`claude -p`) with only

@@ -5,6 +5,7 @@ import * as store from './store.ts';
 import { researchItem, researchStack } from './research.ts';
 import { claudeStatus, startLogin } from './claude.ts';
 import { clearChat, resetStuckChats, sendMessage } from './chat.ts';
+import { initAutoCommit } from './autocommit.ts';
 
 const PORT = Number(process.env.STACK_API_PORT ?? 5174);
 const MAX_PARALLEL = 3;
@@ -246,6 +247,7 @@ app.use((err: Error, _req: Request, res: Response, _next: NextFunction) => {
 });
 
 await store.ensureDataDir();
+initAutoCommit(store.DATA_DIR);
 // A run that was in flight when the server stopped will never finish.
 for (const r of await store.listReports()) {
   if (r.status === 'running') {
