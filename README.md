@@ -24,9 +24,13 @@ Runs locally. Your data lives in its own folder, never in this repo.
 - **Review before saving**: research lands as a dated report. Nothing changes
   until you accept it, and every run is kept as history
 - **Stop tracking** with a reason, so you remember why you quit something
-- **Sharing controls** per item, ready for the friends feature. Supplements are
-  shared by default; prescriptions and OTC meds are private unless you turn
-  them on (per item, or for all of them in Settings)
+- **Friends**: join a group with an invite link and see each other's stacks:
+  what, when, why, the research verdict, testing status, red flags and what
+  each person has learned, with "you both take this" highlights. Your stack
+  republishes automatically a few seconds after it changes
+- **Sharing controls** per item. Supplements are shared by default;
+  prescriptions and OTC meds are private unless you turn them on (per item,
+  or for all of them in Settings). Private notes are never shared
 
 ## Setup
 
@@ -72,8 +76,16 @@ digest runs on Haiku. Optional `.env` overrides: `STACK_RESEARCH_MODEL`,
 Research is informational, not medical advice. It won't tell you to stop a
 prescription; talk to your doctor.
 
-## Roadmap
+## Friends
 
-- **Friends**: a Publish button and a Friends tab backed by a small Cloudflare
-  Worker, so friends can see each other's stacks and why they take them.
-  Only items marked shared get published.
+A friend sends you an invite link. Open **Friends**, paste it under **Join a
+group**, and you're in. Joining needs nothing else.
+
+Groups live on a small Cloudflare Worker in [`friends-worker/`](friends-worker).
+Whoever starts a group needs its URL in `.env` as `STACK_FRIENDS_URL`; the
+invite link carries it to everyone else. Your membership key is saved in
+`.friends.json` next to the app (gitignored), never in your data folder.
+
+What friends see is exactly what **See what friends see of your stack** shows:
+items marked shared, with name, brand, dose, timing, why, cost per day,
+testing status, verdict, red flag titles and your learned takeaways.

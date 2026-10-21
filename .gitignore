@@ -6,3 +6,5 @@ dist
 # or use ./data locally (ignored).
 /data
 .claude
+# Your key for the friends group. Never commit it.
+.friends.json

@@ -181,3 +181,51 @@ export interface Chat {
   summarizing?: boolean;
   error?: string;
 }
+
+/** One item as friends see it. Built only from items you've marked shared. */
+export interface SharedItem {
+  id: string;
+  name: string;
+  kind: Kind;
+  brand?: string;
+  product?: string;
+  dose?: string;
+  timing: Timing[];
+  why?: string;
+  url?: string;
+  store?: string;
+  costPerDay?: number;
+  testing: { status: TestingStatus; certifications: string[] };
+  verdict?: string;
+  redFlags: { title: string; severity: Severity }[];
+  takeaways: string[];
+  status: 'active' | 'stopped';
+  stopReason?: string;
+  startedAt?: string;
+}
+
+export interface Profile {
+  name: string;
+  publishedAt: string;
+  items: SharedItem[];
+}
+
+export interface FriendMember {
+  id: string;
+  name: string;
+  joinedAt: string;
+  profile: Profile | null;
+}
+
+export type FriendsState =
+  | { connected: false; canCreate: boolean }
+  | {
+      connected: true;
+      groupName: string;
+      inviteLink: string;
+      me: string;
+      members: FriendMember[];
+      autoPublish: boolean;
+      lastPublishedAt?: string;
+      error?: string;
+    };

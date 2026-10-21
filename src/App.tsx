@@ -7,6 +7,7 @@ import { ItemPanel } from './components/ItemPanel.tsx';
 import { StackPanel } from './components/StackPanel.tsx';
 import { SettingsPanel } from './components/SettingsPanel.tsx';
 import { ClaudeConnect } from './components/ClaudeConnect.tsx';
+import { FriendsView } from './components/FriendsView.tsx';
 
 type Panel = { kind: 'item'; id: string } | { kind: 'new' } | { kind: 'stack' } | { kind: 'settings' } | null;
 
@@ -15,6 +16,10 @@ export function App() {
   const [error, setError] = useState<string | null>(null);
   const [panel, setPanel] = useState<Panel>(null);
   const [showStopped, setShowStopped] = useState(false);
+  const [view, setView] = useState<'stack' | 'friends'>(() => (location.hash === '#friends' ? 'friends' : 'stack'));
+  useEffect(() => {
+    history.replaceState(null, '', view === 'friends' ? '#friends' : location.pathname);
+  }, [view]);
 
   const refresh = useCallback(async () => {
     try {
@@ -113,7 +118,12 @@ export function App() {
       <header className="top">
         <div className="brand">
           <h1>Stack</h1>
-          {state.settings.displayName && <span className="muted">{state.settings.displayName}</span>}
+          <div className="switch" role="tablist">
+            <button role="tab" aria-selected={view === 'stack'} className={view === 'stack' ? 'active' : ''}
+              onClick={() => setView('stack')}>My stack</button>
+            <button role="tab" aria-selected={view === 'friends'} className={view === 'friends' ? 'active' : ''}
+              onClick={() => setView('friends')}>Friends</button>
+          </div>
         </div>
         <div className="totals">
           <div className="stat">
@@ -145,6 +155,9 @@ export function App() {
 
       <ClaudeConnect />
       {error && <div className="banner error">{error}</div>}
+      {view === 'friends' ? (
+        <FriendsView settings={state.settings} myItems={state.items} onSettingsChanged={refresh} />
+      ) : <>
       {totals.missing > 0 && (
         <div className="banner">
           {totals.missing} active item{totals.missing === 1 ? ' has' : 's have'} no price yet, so the totals are incomplete.
@@ -193,6 +206,8 @@ export function App() {
           )}
         </section>
       )}
+
+      </>}
 
       <footer className="foot muted">
         Data: <code>{state.dataDir}</code> · Research is informational, not medical advice.

@@ -2,7 +2,6 @@ import { mkdir, readdir, readFile, rename, rm, writeFile } from 'node:fs/promise
 import { existsSync } from 'node:fs';
 import path from 'node:path';
 import type { Chat, Item, Report, Settings } from '../shared/types.ts';
-import { noteChange } from './autocommit.ts';
 
 // Data lives outside the app repo so the public code never carries anyone's stack.
 export const DATA_DIR = path.resolve(process.env.STACK_DATA_DIR ?? 'data');
@@ -11,6 +10,15 @@ const itemsDir = path.join(DATA_DIR, 'supplements');
 const reportsDir = path.join(DATA_DIR, 'reports');
 const chatsDir = path.join(DATA_DIR, 'chats');
 const settingsFile = path.join(DATA_DIR, 'settings.json');
+
+// Anything that wants to react to saved data (auto-commit, auto-publish) subscribes here.
+const listeners: ((file: string) => void)[] = [];
+export function onChange(fn: (file: string) => void) {
+  listeners.push(fn);
+}
+function changed(file: string) {
+  for (const fn of listeners) fn(file);
+}
 
 const DEFAULT_SETTINGS: Settings = { displayName: '', shareMedsByDefault: false };
 
@@ -24,7 +32,7 @@ async function writeJson(file: string, data: unknown) {
   const tmp = `${file}.tmp`;
   await writeFile(tmp, JSON.stringify(data, null, 2) + '\n');
   await rename(tmp, file);
-  noteChange(file);
+  changed(file);
 }
 
 async function listJson<T>(dir: string): Promise<T[]> {
@@ -67,7 +75,7 @@ export async function saveItem(item: Item) {
 export async function deleteItem(id: string) {
   const file = path.join(itemsDir, `${slugify(id)}.json`);
   await rm(file, { force: true });
-  noteChange(file);
+  changed(file);
 }
 
 export async function uniqueId(name: string) {

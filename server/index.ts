@@ -6,6 +6,7 @@ import { researchItem, researchStack } from './research.ts';
 import { claudeStatus, startLogin } from './claude.ts';
 import { clearChat, resetStuckChats, sendMessage } from './chat.ts';
 import { initAutoCommit } from './autocommit.ts';
+import * as friends from './friends.ts';
 
 const PORT = Number(process.env.STACK_API_PORT ?? 5174);
 const MAX_PARALLEL = 3;
@@ -198,6 +199,30 @@ app.delete('/api/items/:id/chat', wrap(async (req, res) => {
 
 // Accepting copies findings onto the item. Product details only fill blanks,
 // and "why" only replaces yours if you ask, so your own notes aren't clobbered.
+app.get('/api/friends', wrap(async (_req, res) => {
+  res.json(await friends.friendsState());
+}));
+
+app.get('/api/friends/preview', wrap(async (_req, res) => {
+  res.json(await friends.buildProfile());
+}));
+
+const friendsAction = (fn: (body: Record<string, unknown>) => Promise<unknown>) =>
+  wrap(async (req, res) => {
+    try {
+      await fn(req.body ?? {});
+    } catch (e) {
+      return res.status(400).json({ error: e instanceof Error ? e.message : String(e) });
+    }
+    res.json(await friends.friendsState());
+  });
+
+app.post('/api/friends/create', friendsAction((b) => friends.createGroup(String(b.groupName ?? '').trim())));
+app.post('/api/friends/join', friendsAction((b) => friends.joinGroup(String(b.invite ?? ''))));
+app.post('/api/friends/publish', friendsAction(() => friends.publish()));
+app.post('/api/friends/auto-publish', friendsAction((b) => friends.setAutoPublish(Boolean(b.on))));
+app.post('/api/friends/leave', friendsAction(() => friends.leaveGroup()));
+
 /** Applies a ready report to its item. Returns an error message if it can't. */
 async function acceptReport(report: Report, replaceWhy: boolean): Promise<string | undefined> {
   if (report.status !== 'ready' || !report.findings) return 'Report is not ready';
@@ -268,6 +293,7 @@ app.use((err: Error, _req: Request, res: Response, _next: NextFunction) => {
 
 await store.ensureDataDir();
 initAutoCommit(store.DATA_DIR);
+friends.initAutoPublish();
 // A run that was in flight when the server stopped will never finish.
 for (const r of await store.listReports()) {
   if (r.status === 'running') {

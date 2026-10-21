@@ -1,4 +1,4 @@
-import type { Chat, Item, Report, Settings } from '../shared/types.ts';
+import type { Chat, FriendsState, Item, Profile, Report, Settings } from '../shared/types.ts';
 import type { ClaudeStatus } from '../server/claude.ts';
 
 export type { ClaudeStatus };
@@ -32,6 +32,13 @@ export const api = {
   chat: (id: string) => call<Chat>('GET', `/api/items/${id}/chat`),
   sendChat: (id: string, text: string) => call<Chat>('POST', `/api/items/${id}/chat`, { text }),
   clearChat: (id: string) => call<Chat>('DELETE', `/api/items/${id}/chat`),
+  friends: () => call<FriendsState>('GET', '/api/friends'),
+  friendsPreview: () => call<Profile>('GET', '/api/friends/preview'),
+  createGroup: (groupName: string) => call<FriendsState>('POST', '/api/friends/create', { groupName }),
+  joinGroup: (invite: string) => call<FriendsState>('POST', '/api/friends/join', { invite }),
+  publish: () => call<FriendsState>('POST', '/api/friends/publish'),
+  setAutoPublish: (on: boolean) => call<FriendsState>('POST', '/api/friends/auto-publish', { on }),
+  leaveGroup: () => call<FriendsState>('POST', '/api/friends/leave'),
   researchAll: () => call<{ queued: number; skipped: number }>('POST', '/api/research/all'),
   researchStack: () => call<Report>('POST', '/api/stack/research'),
   accept: (id: string, replaceWhy: boolean) => call<Report>('POST', `/api/reports/${id}/accept`, { replaceWhy }),

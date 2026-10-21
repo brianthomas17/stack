@@ -2,6 +2,7 @@ import { execFile } from 'node:child_process';
 import { existsSync } from 'node:fs';
 import path from 'node:path';
 import { promisify } from 'node:util';
+import { onChange } from './store.ts';
 
 const run = promisify(execFile);
 
@@ -25,11 +26,12 @@ const LABELS: Record<string, string> = {
 export function initAutoCommit(dir: string) {
   dataDir = dir;
   enabled = process.env.STACK_DATA_AUTOCOMMIT !== 'false' && existsSync(path.join(dir, '.git'));
+  if (enabled) onChange(noteChange);
   console.log(enabled ? `Auto-committing changes in ${dir}` : 'Data folder is not a git repo; auto-commit off');
 }
 
 /** Record that a file in the data folder changed. */
-export function noteChange(file: string) {
+function noteChange(file: string) {
   if (!enabled) return;
   const [folder, name = ''] = path.relative(dataDir, file).split(path.sep);
   const label = LABELS[folder] ?? folder.replace(/\.json$/, '');

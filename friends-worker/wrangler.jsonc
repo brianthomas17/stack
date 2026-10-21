@@ -1,0 +1,9 @@
+{
+  "$schema": "./node_modules/wrangler/config-schema.json",
+  "name": "stack-friends",
+  "main": "src/index.ts",
+  "compatibility_date": "2026-10-21",
+  "observability": { "enabled": true },
+  // No id yet: Wrangler provisions the namespace on first deploy.
+  "kv_namespaces": [{ "binding": "STACK" }]
+}
