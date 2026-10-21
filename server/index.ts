@@ -198,14 +198,12 @@ app.delete('/api/items/:id/chat', wrap(async (req, res) => {
 
 // Accepting copies findings onto the item. Product details only fill blanks,
 // and "why" only replaces yours if you ask, so your own notes aren't clobbered.
-app.post('/api/reports/:id/accept', wrap(async (req, res) => {
-  const report = await store.getReport(req.params.id as string);
-  if (!report || report.status !== 'ready' || !report.findings) {
-    return res.status(400).json({ error: 'Report is not ready' });
-  }
+/** Applies a ready report to its item. Returns an error message if it can't. */
+async function acceptReport(report: Report, replaceWhy: boolean): Promise<string | undefined> {
+  if (report.status !== 'ready' || !report.findings) return 'Report is not ready';
   if (report.type === 'item') {
     const item = await store.getItem(report.itemId);
-    if (!item) return res.status(404).json({ error: 'Item no longer exists' });
+    if (!item) return 'Item no longer exists';
     const f = report.findings;
     const now = new Date().toISOString();
     item.research = {
@@ -219,7 +217,7 @@ app.post('/api/reports/:id/accept', wrap(async (req, res) => {
       updatedAt: now,
     };
     item.testing = { ...f.testing, checkedAt: now };
-    if (req.body?.replaceWhy || !item.why) item.why = f.why;
+    if (replaceWhy || !item.why) item.why = f.why;
     const p = f.productDetails ?? {};
     item.brand ||= p.brand;
     item.product ||= p.product;
@@ -230,7 +228,29 @@ app.post('/api/reports/:id/accept', wrap(async (req, res) => {
   }
   report.status = 'accepted';
   await store.saveReport(report);
+}
+
+app.post('/api/reports/:id/accept', wrap(async (req, res) => {
+  const report = await store.getReport(req.params.id as string);
+  if (!report) return res.status(404).json({ error: 'Not found' });
+  const error = await acceptReport(report, Boolean(req.body?.replaceWhy));
+  if (error) return res.status(400).json({ error });
   res.json(report);
+}));
+
+// Accepts the newest ready report for every item. Your own "why" is kept.
+app.post('/api/reports/accept-all', wrap(async (_req, res) => {
+  const seen = new Set<string>();
+  let accepted = 0;
+  const failed: string[] = [];
+  for (const r of await store.listReports()) {
+    if (r.type !== 'item' || r.status !== 'ready' || seen.has(r.itemId)) continue;
+    seen.add(r.itemId);
+    const error = await acceptReport(r, false);
+    if (error) failed.push(`${r.itemId}: ${error}`);
+    else accepted++;
+  }
+  res.json({ accepted, failed });
 }));
 
 app.post('/api/reports/:id/dismiss', wrap(async (req, res) => {

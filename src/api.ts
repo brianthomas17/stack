@@ -35,5 +35,6 @@ export const api = {
   researchAll: () => call<{ queued: number; skipped: number }>('POST', '/api/research/all'),
   researchStack: () => call<Report>('POST', '/api/stack/research'),
   accept: (id: string, replaceWhy: boolean) => call<Report>('POST', `/api/reports/${id}/accept`, { replaceWhy }),
+  acceptAll: () => call<{ accepted: number; failed: string[] }>('POST', '/api/reports/accept-all'),
   dismiss: (id: string) => call<Report>('POST', `/api/reports/${id}/dismiss`),
 };

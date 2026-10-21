@@ -100,6 +100,8 @@ button.link { border: none; background: none; padding: 0; color: var(--accent); 
   font-size: 14px;
 }
 .banner.info { background: var(--info-bg); color: var(--info); }
+.banner-action { display: flex; justify-content: space-between; align-items: center; gap: 16px; }
+.banner-action button { flex-shrink: 0; }
 .banner.error { background: var(--bad-bg); color: var(--bad); }
 .banner.connect {
   display: flex;

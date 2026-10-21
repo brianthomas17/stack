@@ -54,6 +54,17 @@ export function App() {
   const toReview = state?.reports.filter((r) => r.type === 'item' && r.status === 'ready').length ?? 0;
   const researching = state?.reports.filter((r) => r.type === 'item' && r.status === 'running').length ?? 0;
 
+  const acceptAll = async () => {
+    if (!confirm(`Accept all ${toReview} research reports? Each item gets its new research, testing status and red flags, and empty price, dose and brand fields are filled in. Your own "why" notes are kept.`)) return;
+    try {
+      const { failed } = await api.acceptAll();
+      setError(failed.length ? `Some reports couldn't be accepted: ${failed.join('; ')}` : null);
+      await refresh();
+    } catch (e) {
+      setError(e instanceof Error ? e.message : String(e));
+    }
+  };
+
   const researchAll = async () => {
     const n = active.length;
     if (!confirm(`Research all ${n} active items? Claude runs 3 at a time on your subscription, so this takes a while. Items already running or waiting for review are skipped.`)) return;
@@ -141,8 +152,12 @@ export function App() {
         </div>
       )}
       {toReview > 0 && (
-        <div className="banner info">
-          {toReview} research report{toReview === 1 ? ' is' : 's are'} ready to review. Look for the "Review" badge.
+        <div className="banner info banner-action">
+          <span>
+            {toReview} research report{toReview === 1 ? ' is' : 's are'} ready to review. Open an item with a
+            "Review" badge, or accept them all at once.
+          </span>
+          <button className="primary" onClick={acceptAll}>Accept all</button>
         </div>
       )}
 
