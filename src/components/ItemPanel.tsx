@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import {
   costPerServing, dailyCost, shouldShare,
   type Chat, type Item, type ItemReport, type Report, type Settings,
@@ -9,7 +9,7 @@ import { ItemForm } from './ItemForm.tsx';
 import { Findings, ResearchView } from './Research.tsx';
 import { TestingBadge } from './Badges.tsx';
 import { Glance } from './Glance.tsx';
-import { ChatView } from './ChatView.tsx';
+import { ChatDock, type ChatDockHandle } from './ChatDock.tsx';
 
 interface Props {
   item?: Item;
@@ -25,7 +25,7 @@ export function ItemPanel({ item, settings, reports, onClose, onChanged }: Props
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [replaceWhy, setReplaceWhy] = useState(false);
-  const [tab, setTab] = useState<'details' | 'chat'>('details');
+  const dockRef = useRef<ChatDockHandle>(null);
   const [chat, setChat] = useState<Chat>();
 
   const itemId = item?.id;
@@ -173,21 +173,8 @@ export function ItemPanel({ item, settings, reports, onClose, onChanged }: Props
         </div>
       )}
 
-      <Glance item={item} chat={chat} onAsk={() => setTab('chat')} />
+      <Glance item={item} chat={chat} onAsk={() => dockRef.current?.focus()} />
 
-      <div className="tabs" role="tablist">
-        <button role="tab" aria-selected={tab === 'details'} className={tab === 'details' ? 'active' : ''}
-          onClick={() => setTab('details')}>Details</button>
-        <button role="tab" aria-selected={tab === 'chat'} className={tab === 'chat' ? 'active' : ''}
-          onClick={() => setTab('chat')}>
-          Chat{chat?.messages.length ? ` (${chat.messages.length})` : ''}
-          {chat?.pending && <span className="dot running" />}
-        </button>
-      </div>
-
-      {tab === 'chat' && <ChatView item={item} chat={chat} setChat={setChat} />}
-
-      {tab === 'details' && <>
       <dl className="facts">
         <div><dt>Dose</dt><dd>{item.dose || '—'}</dd></div>
         <div><dt>When</dt><dd>{item.timing.map((t) => t.toUpperCase()).join(' + ') || '—'}</dd></div>
@@ -232,7 +219,8 @@ export function ItemPanel({ item, settings, reports, onClose, onChanged }: Props
           </ul>
         </section>
       )}
-      </>}
+
+      <ChatDock ref={dockRef} item={item} chat={chat} setChat={setChat} />
     </div>
   );
 }

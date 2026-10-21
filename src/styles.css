@@ -264,29 +264,39 @@ textarea { resize: vertical; }
 .glance-learned-head { display: flex; justify-content: space-between; align-items: baseline; }
 .glance-learned .list { font-size: 14px; gap: 4px; }
 
-.tabs { display: flex; gap: 4px; border-bottom: 1px solid var(--border); margin-bottom: 14px; }
-.tabs button {
-  border: none;
-  border-bottom: 2px solid transparent;
-  border-radius: 0;
-  background: none;
-  color: var(--muted);
-  padding: 8px 12px;
+.dock {
+  position: sticky;
+  bottom: 0;
+  margin: 20px -20px -20px;
+  background: var(--surface);
+  border-top: 1px solid var(--border);
+  box-shadow: 0 -6px 18px rgb(0 0 0 / 0.12);
+  display: flex;
+  flex-direction: column;
 }
-.tabs button:hover:not(:disabled) { background: none; color: var(--text); }
-.tabs button.active { color: var(--text); border-bottom-color: var(--accent); font-weight: 600; }
-
-.chat { display: flex; flex-direction: column; gap: 10px; }
+.dock-head { display: flex; align-items: center; justify-content: space-between; padding: 4px 12px 0 8px; }
+.dock-toggle { border: none; background: none; gap: 8px; padding: 6px 8px; flex: 1; justify-content: flex-start; }
+.dock-toggle:hover:not(:disabled) { background: none; }
+.dock-title { font-weight: 600; font-size: 14px; }
+.dock-chevron { margin-left: auto; color: var(--muted); }
+.dock-messages {
+  max-height: 50vh;
+  overflow-y: auto;
+  padding: 8px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.dock-error { padding: 0 16px; margin: 0; }
 .starters { display: flex; flex-direction: column; align-items: flex-start; gap: 6px; }
 .starters button { font-size: 13px; }
-.messages { display: flex; flex-direction: column; gap: 10px; }
 .msg { padding: 10px 12px; border-radius: 12px; max-width: 92%; overflow-wrap: anywhere; }
 .msg.user { align-self: flex-end; background: var(--accent); color: var(--accent-text); white-space: pre-wrap; }
-.msg.assistant { align-self: flex-start; background: var(--surface); }
+.msg.assistant { align-self: flex-start; background: var(--surface-2); }
 .msg.thinking { color: var(--muted); }
 .dots::after { content: '…'; animation: pulse 1.2s ease-in-out infinite; }
-.composer { display: flex; gap: 8px; align-items: flex-end; position: sticky; bottom: 0; background: var(--bg); padding: 8px 0; }
-.composer textarea { flex: 1; resize: none; }
+.composer { display: flex; gap: 8px; align-items: flex-end; padding: 8px 16px 14px; }
+.composer textarea { flex: 1; resize: none; max-height: 140px; field-sizing: content; }
 .md > :first-child { margin-top: 0; }
 .md > :last-child { margin-bottom: 0; }
 .md p, .md ul, .md ol { margin: 0 0 8px; }
