@@ -32,11 +32,25 @@ Runs locally. Your data lives in its own folder, never in this repo.
   prescriptions and OTC meds are private unless you turn them on (per item,
   or for all of them in Settings). Private notes are never shared
 
-## Setup
+## Install
 
-You need Node 20+ and [Claude Code](https://claude.com/claude-code). Install
-Claude Code and run `claude` once to log in. The research buttons use that login,
-so there's no API key to manage.
+Open the **Get Stack** page on the friends server (any invite link goes there
+too), pick Mac or Windows, and paste the one command it shows. It checks for
+Node and Claude Code, installs Stack, sets it to start in the background when
+you log in, and opens http://localhost:4747. Bookmark that; there's nothing to
+keep open. When a new version is pushed, Stack shows an **Update now** button.
+
+| | Mac | Windows |
+|---|---|---|
+| Needs | Node 22+, Claude Code | Node 22+, Git for Windows, Claude Code |
+| Command | `curl -fsSL <server>/install.sh \| sh` in Terminal | `irm <server>/install.ps1 \| iex` in PowerShell |
+| App lives in | `~/.stack-app` | `%USERPROFILE%\.stack-app` |
+| Data lives in | `~/StackData` | `%USERPROFILE%\StackData` |
+| Runs via | a launchd agent (`com.stack.app`) | `Stack.vbs` in the Startup folder |
+
+The installers are in [`install/`](install). Running one again updates in place.
+
+## Developing
 
 ```bash
 git clone https://github.com/brianthomas17/stack.git
@@ -47,7 +61,8 @@ cp -r data-example ../stack-data   # optional: start with one example item
 npm run dev
 ```
 
-Open http://localhost:5173.
+Open http://localhost:5173. The API listens only on 127.0.0.1 and refuses
+requests from other hosts or websites.
 
 ### Keeping your data
 
