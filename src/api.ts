@@ -32,6 +32,10 @@ export const api = {
   chat: (id: string) => call<Chat>('GET', `/api/items/${id}/chat`),
   sendChat: (id: string, text: string) => call<Chat>('POST', `/api/items/${id}/chat`, { text }),
   clearChat: (id: string) => call<Chat>('DELETE', `/api/items/${id}/chat`),
+  updateStatus: (check = false) =>
+    call<{ enabled: boolean; available: boolean; behind: number; updating: boolean }>('GET', `/api/update${check ? '?check=1' : ''}`),
+  applyUpdate: () => call<{ restarting: boolean }>('POST', '/api/update'),
+  health: () => call<{ ok: boolean }>('GET', '/api/health'),
   friends: () => call<FriendsState>('GET', '/api/friends'),
   friendsPreview: () => call<Profile>('GET', '/api/friends/preview'),
   createGroup: (groupName: string) => call<FriendsState>('POST', '/api/friends/create', { groupName }),

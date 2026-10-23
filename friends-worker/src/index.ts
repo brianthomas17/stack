@@ -9,6 +9,10 @@
 // Each member authenticates with "Bearer <groupId>.<memberId>.<secret>". Only a
 // SHA-256 of the secret is stored. Anyone with the invite link can join.
 
+import { getPage } from './page.ts';
+import installSh from '../../install/install.sh';
+import installPs1 from '../../install/install.ps1';
+
 interface Member {
   name: string;
   keyHash: string;
@@ -93,16 +97,18 @@ async function route(req: Request, env: Env, url: URL): Promise<Response> {
   const { pathname } = url;
   const method = req.method;
 
-  if (method === 'GET' && pathname === '/') {
-    return new Response('Stack friends server. Paste an invite link into the Stack app to join a group.\n');
-  }
+  const html = (body: string) => new Response(body, { headers: { 'content-type': 'text/html; charset=utf-8' } });
+  const script = (body: string) =>
+    new Response(body, { headers: { 'content-type': 'text/plain; charset=utf-8', 'cache-control': 'no-cache' } });
 
-  // Invite links are meant to be pasted into the app, but explain that if opened in a browser.
-  if (method === 'GET' && pathname.startsWith('/join/')) {
-    return new Response(
-      'This is a Stack invite link. Open the Stack app, go to Friends, choose "Join a group" and paste this whole link.\n',
-    );
-  }
+  if (method === 'GET' && (pathname === '/' || pathname === '/get')) return html(getPage(url.origin));
+
+  // Invite links land on the install page, with a shortcut for people who already have Stack.
+  const join = pathname.match(/^\/join\/([A-Za-z0-9_-]+)$/);
+  if (method === 'GET' && join) return html(getPage(url.origin, join[1]));
+
+  if (method === 'GET' && pathname === '/install.sh') return script(installSh);
+  if (method === 'GET' && pathname === '/install.ps1') return script(installPs1);
 
   if (method === 'POST' && pathname === '/v1/groups') {
     const b = await body(req);

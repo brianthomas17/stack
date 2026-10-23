@@ -8,6 +8,8 @@ import { StackPanel } from './components/StackPanel.tsx';
 import { SettingsPanel } from './components/SettingsPanel.tsx';
 import { ClaudeConnect } from './components/ClaudeConnect.tsx';
 import { FriendsView } from './components/FriendsView.tsx';
+import { UpdateBanner } from './components/UpdateBanner.tsx';
+import { Welcome } from './components/Welcome.tsx';
 
 type Panel = { kind: 'item'; id: string } | { kind: 'new' } | { kind: 'stack' } | { kind: 'settings' } | null;
 
@@ -16,7 +18,13 @@ export function App() {
   const [error, setError] = useState<string | null>(null);
   const [panel, setPanel] = useState<Panel>(null);
   const [showStopped, setShowStopped] = useState(false);
-  const [view, setView] = useState<'stack' | 'friends'>(() => (location.hash === '#friends' ? 'friends' : 'stack'));
+  // An invite link's "Open in Stack" button lands here as #join=<invite link>.
+  const [invite] = useState(() => {
+    const m = location.hash.match(/^#join=(.+)$/);
+    return m ? decodeURIComponent(m[1]) : undefined;
+  });
+  const [view, setView] = useState<'stack' | 'friends'>(() =>
+    location.hash === '#friends' || invite ? 'friends' : 'stack');
   useEffect(() => {
     history.replaceState(null, '', view === 'friends' ? '#friends' : location.pathname);
   }, [view]);
@@ -153,16 +161,21 @@ export function App() {
         </div>
       </header>
 
+      <UpdateBanner />
       <ClaudeConnect />
       {error && <div className="banner error">{error}</div>}
       {view === 'friends' ? (
-        <FriendsView settings={state.settings} myItems={state.items} onSettingsChanged={refresh} />
+        <FriendsView settings={state.settings} myItems={state.items} onSettingsChanged={refresh} invite={invite} />
       ) : <>
       {totals.missing > 0 && (
         <div className="banner">
           {totals.missing} active item{totals.missing === 1 ? ' has' : 's have'} no price yet, so the totals are incomplete.
           Running research fills in prices when it can find them.
         </div>
+      )}
+      {state.items.length === 0 && (
+        <Welcome settings={state.settings} onChanged={refresh}
+          onAdd={() => setPanel({ kind: 'new' })} onFriends={() => setView('friends')} />
       )}
       {toReview > 0 && (
         <div className="banner info banner-action">

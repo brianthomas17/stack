@@ -5,5 +5,7 @@
   "compatibility_date": "2026-10-21",
   "observability": { "enabled": true },
   // No id yet: Wrangler provisions the namespace on first deploy.
+  // Serve the installers in ../install as plain text.
+  "rules": [{ "type": "Text", "globs": ["**/*.sh", "**/*.ps1"], "fallthrough": true }],
   "kv_namespaces": [{ "binding": "STACK" }]
 }

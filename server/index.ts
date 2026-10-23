@@ -1,4 +1,6 @@
 import express, { type Request, type Response, type NextFunction } from 'express';
+import { existsSync } from 'node:fs';
+import path from 'node:path';
 import { randomUUID } from 'node:crypto';
 import type { Item, ItemReport, Report, Settings, StackReport } from '../shared/types.ts';
 import * as store from './store.ts';
@@ -7,11 +9,25 @@ import { claudeStatus, startLogin } from './claude.ts';
 import { clearChat, resetStuckChats, sendMessage } from './chat.ts';
 import { initAutoCommit } from './autocommit.ts';
 import * as friends from './friends.ts';
+import { applyUpdate, updateStatus, updatesEnabled } from './update.ts';
 
 const PORT = Number(process.env.STACK_API_PORT ?? 5174);
 const MAX_PARALLEL = 3;
 
 const app = express();
+
+// This server holds health data and can spend your Claude usage, so only this
+// computer may talk to it. Checking Host stops DNS-rebinding tricks; checking
+// Origin stops other websites from posting to it from your browser.
+const LOCAL_HOST = /^(localhost|127\.0\.0\.1|\[::1\])(:\d+)?$/;
+app.use((req, res, next) => {
+  const origin = req.headers.origin;
+  const originHost = origin ? origin.replace(/^https?:\/\//, '') : undefined;
+  if (!LOCAL_HOST.test(req.headers.host ?? '') || (originHost !== undefined && !LOCAL_HOST.test(originHost))) {
+    return res.status(403).json({ error: 'Stack only accepts requests from this computer' });
+  }
+  next();
+});
 app.use(express.json({ limit: '1mb' }));
 
 const wrap =
@@ -65,6 +81,19 @@ function cleanItem(body: Partial<Item>, existing?: Item): Item {
     status: merged.status ?? 'active',
   };
 }
+
+app.get('/api/health', (_req, res) => {
+  res.json({ ok: true });
+});
+
+app.get('/api/update', wrap(async (req, res) => {
+  res.json(await updateStatus(req.query.check === '1'));
+}));
+
+app.post('/api/update', wrap(async (_req, res) => {
+  await applyUpdate();
+  res.json({ restarting: true });
+}));
 
 app.get('/api/claude/status', wrap(async (_req, res) => {
   res.json(await claudeStatus());
@@ -286,6 +315,16 @@ app.post('/api/reports/:id/dismiss', wrap(async (req, res) => {
   res.json(report);
 }));
 
+// Installed copies serve the built page from this same server, on one port.
+const DIST = path.resolve('dist');
+if (process.env.STACK_INSTALLED === '1' && existsSync(DIST)) {
+  app.use(express.static(DIST));
+  app.use((req, res, next) => {
+    if (req.method !== 'GET' || req.path.startsWith('/api/')) return next();
+    res.sendFile(path.join(DIST, 'index.html'));
+  });
+}
+
 app.use((err: Error, _req: Request, res: Response, _next: NextFunction) => {
   console.error(err);
   res.status(500).json({ error: err.message });
@@ -303,4 +342,6 @@ for (const r of await store.listReports()) {
 
 await resetStuckChats((await store.listItems()).map((i) => i.id));
 
-app.listen(PORT, () => console.log(`Stack API on http://localhost:${PORT} (data: ${store.DATA_DIR})`));
+app.listen(PORT, '127.0.0.1', () => {
+  console.log(`Stack ${updatesEnabled ? 'app' : 'API'} on http://localhost:${PORT} (data: ${store.DATA_DIR})`);
+});

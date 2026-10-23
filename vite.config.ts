@@ -7,6 +7,7 @@ export default defineConfig({
   plugins: [react()],
   server: {
     port: 5173,
-    proxy: { '/api': `http://localhost:${apiPort}` },
+    // 127.0.0.1, not localhost: the API only listens on IPv4 loopback.
+    proxy: { '/api': `http://127.0.0.1:${apiPort}` },
   },
 });

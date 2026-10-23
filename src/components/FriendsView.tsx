@@ -8,11 +8,13 @@ interface Props {
   settings: Settings;
   myItems: Item[];
   onSettingsChanged: () => Promise<void> | void;
+  /** Prefills the join form when you arrive from an invite link. */
+  invite?: string;
 }
 
 const norm = (s: string) => s.toLowerCase().replace(/[^a-z0-9]/g, '');
 
-export function FriendsView({ settings, myItems, onSettingsChanged }: Props) {
+export function FriendsView({ settings, myItems, onSettingsChanged, invite }: Props) {
   const [state, setState] = useState<FriendsState | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
@@ -56,12 +58,13 @@ export function FriendsView({ settings, myItems, onSettingsChanged }: Props) {
       {error && <div className="banner error">{error}</div>}
       {state.connected
         ? <Group state={state} myItems={myItems} busy={busy} act={act} />
-        : <Connect canCreate={state.canCreate} settings={settings} busy={busy} act={act} onSettingsChanged={onSettingsChanged} />}
+        : <Connect canCreate={state.canCreate} settings={settings} busy={busy} act={act} onSettingsChanged={onSettingsChanged} invite={invite} />}
     </div>
   );
 }
 
-function Connect({ canCreate, settings, busy, act, onSettingsChanged }: {
+function Connect({ canCreate, settings, busy, act, onSettingsChanged, invite: initialInvite }: {
+  invite?: string;
   canCreate: boolean;
   settings: Settings;
   busy: boolean;
@@ -70,7 +73,7 @@ function Connect({ canCreate, settings, busy, act, onSettingsChanged }: {
 }) {
   const [name, setName] = useState(settings.displayName);
   const [groupName, setGroupName] = useState('');
-  const [invite, setInvite] = useState('');
+  const [invite, setInvite] = useState(initialInvite ?? '');
 
   // Your name is what friends see; save it before creating or joining.
   const withName = (fn: () => Promise<FriendsState>) => act(async () => {
